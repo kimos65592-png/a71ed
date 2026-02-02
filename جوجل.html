@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Commander Pro | Cloud Sync</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root { --primary: #6366f1; --bg: #0f172a; --glass: rgba(30, 41, 59, 0.75); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { 
+            background-color: var(--bg); color: #f8fafc; min-height: 100vh; 
+            background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+        .glass-card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; }
+        .page { display: none; animation: fadeIn 0.4s ease-out; padding-bottom: 120px; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .nav-item { transition: 0.3s; color: #64748b; cursor: pointer; }
+        .nav-item.active { color: #fff; transform: translateY(-5px); }
+        .nav-item.active i { color: var(--primary); }
+        
+        #qr-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(15px); }
+        #qr-modal.active { display: flex; }
+        
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .grade-btn.active { background: #8b5cf6; color: white; border-color: #8b5cf6; }
+
+        #scanner-view { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; flex-direction: column; }
+        #scanner-view.active { display: flex; }
+        #video { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Scrollbar hiding */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .new-student-alert {
+            position: fixed; top: 20px; left: 20px; right: 20px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white; padding: 16px; border-radius: 20px;
+            display: none; align-items: center; justify-content: space-between;
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.6); z-index: 10002;
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: slideDown 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+    </style>
+</head>
+<body>
+    <div id="toast-host" class="fixed top-24 left-0 right-0 z-[10001] px-6 pointer-events-none flex flex-col items-center gap-2"></div>
+
+    <div class="fixed top-4 left-4 z-50 flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+        <div id="sync-status-dot" class="w-2 h-2 rounded-full bg-gray-500"></div>
+        <span id="sync-status-text" class="text-[10px] font-bold text-gray-400">تحميل البيانات...</span>
+    </div>
+
+    <div id="student-alert" class="new-student-alert">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-bounce">
+                <i class="fas fa-user-plus text-xl"></i>
+            </div>
+            <div>
+                <p class="text-[10px] uppercase tracking-wider font-bold text-indigo-200">طالب جديد!</p>
+                <p id="alert-std-name" class="text-sm font-black truncate max-w-[150px]">...</p>
+            </div>
+        </div>
+        <button id="alert-qr-btn" class="bg-white text-indigo-600 px-5 py-3 rounded-xl text-xs font-black shadow-lg">
+            عرض QR <i class="fas fa-arrow-left ml-1"></i>
+        </button>
+    </div>
+
+    <div id="qr-modal">
+        <div class="glass-card p-8 w-full max-w-sm text-center relative border-indigo-500/30">
+            <button onclick="closeQR()" class="absolute top-4 right-4 text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+            <div class="mb-4">
+                <span class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-2 py-1 rounded mb-2 inline-block">ID: <span id="qr-id-display"></span></span>
+                <h2 id="qr-name" class="text-xl font-bold mb-1">اسم الطالب</h2>
+                <p id="qr-phone" class="text-[10px] text-gray-400">01xxxxxxxxx</p>
+            </div>
+            <div id="qrcode-container" class="bg-white p-5 rounded-[40px] inline-block mb-6 shadow-2xl border-4 border-indigo-500/20">
+                <div id="qrcode" class="flex justify-center items-center"></div>
+            </div>
+            <button id="download-btn" onclick="window.saveQR()" class="w-full bg-indigo-600 p-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-transform active:scale-95">
+                <i class="fas fa-download"></i> حفظ في الجهاز
+            </button>
+        </div>
+    </div>
+
+    <div id="app" class="max-w-md mx-auto relative min-h-screen pb-20">
+        <header class="p-6 flex justify-between items-center sticky top-0 z-40 bg-[#0f172a]/90 backdrop-blur-md border-b border-white/5">
+            <div>
+                <h1 id="page-title" class="text-2xl font-black text-indigo-400 tracking-tight">Commander Pro</h1>
+                <p class="text-[9px] text-gray-500 font-bold mt-1">المزامنة السحابية النشطة</p>
+            </div>
+            <button onclick="forceSync()" class="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 active:scale-90 transition-transform">
+                <i class="fas fa-sync-alt" id="sync-icon"></i>
+            </button>
+        </header>
+
+        <main class="px-5 pt-6">
+            <section id="p-home" class="page active">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="glass-card p-5 border-b-4 border-indigo-500">
+                        <p class="text-[10px] text-gray-400 font-bold mb-1">المسجلين</p>
+                        <h3 id="stat-total" class="text-3xl font-black">0</h3>
+                    </div>
+                    <div class="glass-card p-5 border-b-4 border-cyan-500">
+                        <p class="text-[10px] text-gray-400 font-bold mb-1">حضور الحصة</p>
+                        <h3 id="stat-att" class="text-3xl font-black text-cyan-400">0</h3>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 mb-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xs font-bold text-gray-400">إحصائيات الحضور</h3>
+                        <select id="home-session-select" class="bg-black/40 px-3 py-1.5 rounded-xl text-[10px] font-bold text-indigo-400 border border-white/5 outline-none max-w-[150px]">
+                            <option value="">جاري تحميل الحصص...</option>
+                        </select>
+                    </div>
+                    <div class="h-44 relative flex justify-center items-center">
+                        <canvas id="mainChart"></canvas>
+                        <div class="absolute text-center">
+                            <span id="chart-percent" class="text-2xl font-black">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-5">
+                    <h3 class="text-xs font-bold text-gray-400 mb-3">آخر المسجلين</h3>
+                    <div id="latest-students" class="space-y-2"></div>
+                </div>
+            </section>
+
+            <section id="p-students" class="page">
+                <div class="flex gap-2 mb-3 overflow-x-auto no-scrollbar pb-2">
+                    <button onclick="setGradeFilter('all')" class="grade-btn active whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-bold border border-white/10 bg-white/5">الكل</button>
+                    <button onclick="setGradeFilter('1p')" class="grade-btn whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-bold border border-white/10 bg-white/5">أولى إعدادي</button>
+                    <button onclick="setGradeFilter('2p')" class="grade-btn whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-bold border border-white/10 bg-white/5">تانية إعدادي</button>
+                    <button onclick="setGradeFilter('3p')" class="grade-btn whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-bold border border-white/10 bg-white/5">تالتة إعدادي</button>
+                    <button onclick="setGradeFilter('1s')" class="grade-btn whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-bold border border-white/10 bg-white/5">أولى ثانوي</button>
+                    <button onclick="setGradeFilter('2s')" class="grade-btn whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-bold border border-white/10 bg-white/5">تانية ثانوي</button>
+                    <button onclick="setGradeFilter('3s')" class="grade-btn whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-bold border border-white/10 bg-white/5">تالتة ثانوي</button>
+                </div>
+
+                <div class="flex gap-2 mb-6">
+                    <button onclick="setFilter('all')" id="tab-all" class="tab-btn active flex-1 py-3 rounded-2xl text-[10px] font-bold border border-white/5 bg-white/5">الكل</button>
+                    <button onclick="setFilter('present')" id="tab-present" class="tab-btn flex-1 py-3 rounded-2xl text-[10px] font-bold border border-white/5 bg-white/5 text-green-400">حضور</button>
+                    <button onclick="setFilter('absent')" id="tab-absent" class="tab-btn flex-1 py-3 rounded-2xl text-[10px] font-bold border border-white/5 bg-white/5 text-red-400">غياب</button>
+                </div>
+                
+                <div id="student-list" class="space-y-3 pb-10"></div>
+            </section>
+
+            <section id="p-settings" class="page">
+                <div class="glass-card p-6 mb-6">
+                    <h3 class="text-xs font-black text-indigo-400 mb-4">إضافة حصة جديدة</h3>
+                    <div class="flex gap-2">
+                        <input id="sess-name" type="text" placeholder="اسم الحصة..." class="flex-1 p-4 rounded-2xl outline-none text-sm bg-black/20 border border-white/10 text-white">
+                        <button id="add-sess-btn" class="bg-indigo-600 px-6 rounded-2xl font-bold text-white shadow-lg"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <p class="text-[9px] text-gray-500 mt-2">* لن يتم تكرار اسم الحصة إذا كان موجوداً</p>
+                </div>
+                <div id="session-list" class="space-y-3"></div>
+            </section>
+        </main>
+
+        <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-3 pb-5 bg-[#0f172a]/95 backdrop-blur-2xl border-t border-white/5 flex justify-between items-center z-50 px-6">
+            <button id="nav-home" onclick="Nav.go('home')" class="nav-item active flex flex-col items-center gap-1">
+                <i class="fas fa-th-large text-lg"></i><span class="text-[9px] font-bold">الرئيسية</span>
+            </button>
+            <button id="nav-students" onclick="Nav.go('students')" class="nav-item flex flex-col items-center gap-1">
+                <i class="fas fa-users text-lg"></i><span class="text-[9px] font-bold">الطلاب</span>
+            </button>
+            <button onclick="Scanner.start()" class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white -mt-10 shadow-2xl shadow-indigo-600/40 border-4 border-[#0f172a] transform active:scale-90 transition-all">
+                <i class="fas fa-expand text-xl"></i>
+            </button>
+            <a href="https://forms.gle/dj9BWyiKcfS45YU68" target="_blank" class="nav-item flex flex-col items-center gap-1 text-gray-400 hover:text-green-400">
+                <i class="fab fa-google-drive text-lg"></i><span class="text-[9px] font-bold">تسجيل</span>
+            </a>
+            <button id="nav-settings" onclick="Nav.go('settings')" class="nav-item flex flex-col items-center gap-1">
+                <i class="fas fa-stream text-lg"></i><span class="text-[9px] font-bold">الحصص</span>
+            </button>
+        </nav>
+    </div>
+
+    <div id="scanner-view">
+        <div class="p-6 flex justify-between items-center z-20 absolute top-0 left-0 right-0">
+            <button onclick="Scanner.stop()" class="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="relative flex-1 flex items-center justify-center">
+            <video id="video" playsinline muted autoplay></video>
+            <div class="w-[280px] h-[280px] border-2 border-indigo-400 rounded-[40px] absolute z-10 shadow-[0_0_0_4000px_rgba(0,0,0,0.8)]"></div>
+        </div>
+        <div id="scan-res" class="absolute bottom-24 left-0 right-0 px-8 text-center text-lg font-black text-white"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, doc, addDoc, setDoc, getDoc, onSnapshot, query, orderBy, deleteDoc, serverTimestamp, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDlFKLBjescHNGP_ovOycr0VOXs5wubKRM",
+          authDomain: "commander-pro-saas-4e417.firebaseapp.com",
+          projectId: "commander-pro-saas-4e417",
+          storageBucket: "commander-pro-saas-4e417.firebasestorage.app",
+          messagingSenderId: "795152717379",
+          appId: "1:795152717379:web:7c49f0cf2af75329b5e6f6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        enableIndexedDbPersistence(db).catch(() => {});
+
+        const TEACHER_ID = "admin_commander_pro";
+        const baseDir = `teachers/${TEACHER_ID}`;
+        const SHEET_ID = '11pVoj3INM6l7fU9cXCF8wcZ9p3ne3Cii3yFy7B_xsfo';
+
+        let state = { 
+            students: [], 
+            sessions: [], 
+            attendance: [], 
+            activeSession: localStorage.getItem('cmd_active_sess') || '',
+            filter: 'all',
+            gradeFilter: 'all' // الفلتر الجديد للصفوف
+            
+        };
+        let chartInstance = null;
+        let isFirstLoad = true;
+
+        window.Nav = {
+            go: (id) => {
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                document.getElementById('p-' + id).classList.add('active');
+                if(document.getElementById('nav-' + id)) document.getElementById('nav-' + id).classList.add('active');
+                document.getElementById('page-title').innerText = id === 'home' ? 'Commander Pro' : id === 'students' ? 'قائمة الطلاب' : 'إعدادات الحصص';
+            }
+        };
+
+        window.toast = (msg, type = 'normal') => {
+            const h = document.getElementById('toast-host');
+            const n = document.createElement('div');
+            n.className = `glass-card p-3 px-6 text-[10px] font-black border-l-4 text-white shadow-2xl ${type === 'error' ? 'bg-red-900/80 border-red-500' : 'bg-indigo-900/80 border-indigo-500'}`;
+            n.innerText = msg;
+            h.appendChild(n);
+            setTimeout(() => n.remove(), 3000);
+        };
+
+        function generateStaticId(name, phone) {
+            const seed = (name + (phone || "000")).trim();
+            return btoa(unescape(encodeURIComponent(seed))).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+        }
+
+        async function fetchGoogleSheetData() {
+            const statusDot = document.getElementById('sync-status-dot');
+            const statusText = document.getElementById('sync-status-text');
+            try {
+                statusDot.className = "w-2 h-2 rounded-full bg-yellow-400 animate-pulse";
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+                const response = await fetch(url);
+                const text = await response.text();
+                const jsonText = text.substring(47).slice(0, -2);
+                const json = JSON.parse(jsonText);
+                const rows = json.table.rows;
+
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row.c || !row.c[1]) continue;
+                    const name = row.c[1]?.v;
+                    const phone = row.c[2]?.v?.toString() || "";
+                    // هنا يفترض الكود أن العمود الرابع (Column D) يحتوي على الصف الدراسي
+                    // القيم المتوقعة: "أولى إعدادي", "1p", "1st prep" إلخ للبحث
+                    const grade = row.c[3]?.v?.toString() || "عام"; 
+
+                    const stdId = generateStaticId(name, phone);
+                    const existing = state.students.find(s => s.id === stdId);
+                    
+                    // تحديث البيانات إذا كان الطالب موجود أو إنشاء جديد
+                    await setDoc(doc(db, baseDir, "students", stdId), {
+                        name: name, 
+                        phone: phone, 
+                        grade: grade, // تخزين الصف
+                        registeredAt: serverTimestamp()
+                    }, { merge: true });
+
+                    if (!existing && !isFirstLoad) showNewStudentAlert(stdId, name, phone);
+                }
+                statusDot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]";
+                statusText.innerText = "متصل سحابياً";
+            } catch (error) {
+                console.error(error);
+                statusDot.className = "w-2 h-2 rounded-full bg-red-500";
+                statusText.innerText = "فشل المزامنة";
+            } finally { isFirstLoad = false; }
+        }
+
+        window.forceSync = () => { toast("جاري المزامنة..."); fetchGoogleSheetData(); };
+
+        window.initApp = () => {
+            onSnapshot(collection(db, baseDir, "students"), snap => {
+                state.students = snap.docs.map(d => ({id:d.id, ...d.data()}));
+                render();
+            });
+
+            onSnapshot(query(collection(db, baseDir, "sessions"), orderBy("createdAt", "desc")), snap => {
+                state.sessions = snap.docs.map(d => ({id:d.id, ...d.data()}));
+                if(state.activeSession && !state.sessions.find(s => s.id === state.activeSession)) {
+                    state.activeSession = "";
+                    localStorage.removeItem('cmd_active_sess');
+                }
+                render();
+            });
+
+            onSnapshot(collection(db, baseDir, "attendance"), snap => {
+                state.attendance = snap.docs.map(d => ({id:d.id, ...d.data()}));
+                render();
+            });
+
+            fetchGoogleSheetData();
+            setInterval(fetchGoogleSheetData, 20000);
+        };
+
+        window.showQR = (id, name, phone = "") => {
+            document.getElementById('qr-name').innerText = name;
+            document.getElementById('qr-phone').innerText = phone || 'رقم غير مسجل';
+            document.getElementById('qr-id-display').innerText = id.substring(0,8);
+            const container = document.getElementById('qrcode');
+            container.innerHTML = '';
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            document.getElementById('qr-modal').classList.add('active');
+            setTimeout(() => {
+                const payload = btoa(unescape(encodeURIComponent(JSON.stringify({id: id}))));
+                QRCode.toCanvas(canvas, payload, { width: 200, margin: 2 });
+            }, 50);
+        };
+
+        window.closeQR = () => document.getElementById('qr-modal').classList.remove('active');
+
+        window.saveQR = () => {
+            const canvas = document.querySelector('#qrcode canvas');
+            const link = document.createElement('a');
+            link.download = `QR_${document.getElementById('qr-name').innerText}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            toast("✅ تم حفظ الكود الثابت");
+        };
+
+        // دالة مساعدة لتطابق الصفوف مع الفلتر
+        function checkGradeMatch(studentGrade, filter) {
+            if(filter === 'all') return true;
+            const g = (studentGrade || "").toLowerCase();
+            // كلمات مفتاحية لكل صف
+            if(filter === '1p') return g.includes('أولى إعدادي') || g.includes('اولى اعدادي') || g.includes('1st') || g.includes('1 prep') || g.includes('1p');
+            if(filter === '2p') return g.includes('ثانية إعدادي') || g.includes('تانية اعدادي') || g.includes('2nd') || g.includes('2 prep') || g.includes('2p');
+            if(filter === '3p') return g.includes('ثالثة إعدادي') || g.includes('تالتة اعدادي') || g.includes('3rd') || g.includes('3 prep') || g.includes('3p');
+            if(filter === '1s') return g.includes('أولى ثانوي') || g.includes('اولى ثانوي') || g.includes('1 sec') || g.includes('1s');
+            if(filter === '2s') return g.includes('ثانية ثانوي') || g.includes('تانية ثانوي') || g.includes('2 sec') || g.includes('2s');
+            if(filter === '3s') return g.includes('ثالثة ثانوي') || g.includes('تالتة ثانوي') || g.includes('3 sec') || g.includes('3s');
+            return false;
+        }
+
+        function render() {
+            const currentSessionAtt = state.attendance.filter(a => a.sessionId === state.activeSession);
+            const attendedIds = new Set(currentSessionAtt.map(a => a.studentId));
+            
+            // احصائيات بناء على الفلتر الحالي لو حبيت، بس هنا هنخليها عامة
+            document.getElementById('stat-total').innerText = state.students.length;
+            document.getElementById('stat-att').innerText = attendedIds.size;
+
+            // تحديث قائمة الحصص
+            const sel = document.getElementById('home-session-select');
+            if(sel) {
+                sel.innerHTML = `<option value="">اختر الحصة</option>` + 
+                    state.sessions.map(s => `<option value="${s.id}" ${s.id===state.activeSession?'selected':''}>${s.title}</option>`).join('');
+                sel.onchange = (e) => {
+                    state.activeSession = e.target.value;
+                    localStorage.setItem('cmd_active_sess', e.target.value);
+                    render();
+                };
+            }
+            
+            // تحديث قائمة الطلاب
+            const list = document.getElementById('student-list');
+            
+            // 1. فلترة الصف الدراسي أولاً
+            let filtered = state.students.filter(s => checkGradeMatch(s.grade, state.gradeFilter));
+            
+            // 2. فلترة الحضور والغياب ثانياً
+            if(state.filter==='present') filtered = filtered.filter(s=>attendedIds.has(s.id));
+            if(state.filter==='absent') filtered = filtered.filter(s=>!attendedIds.has(s.id));
+            
+            filtered.sort((a,b) => a.name.localeCompare(b.name));
+
+            // تجهيز اسم الحصة للرسالة
+            const currentSessObj = state.sessions.find(s => s.id === state.activeSession);
+            const sessName = currentSessObj ? currentSessObj.title : "الحصة";
+
+            list.innerHTML = filtered.map(s => {
+                const isPresent = attendedIds.has(s.id);
+                // تنسيق رقم الهاتف للواتس
+                let phoneClean = (s.phone || "").replace(/\D/g, ''); // حذف أي رموز غير الأرقام
+                if(phoneClean.startsWith('0')) phoneClean = phoneClean.substring(1); // حذف الصفر الأول
+                if(!phoneClean.startsWith('20')) phoneClean = '20' + phoneClean; // إضافة كود مصر
+                
+                const waMsg = encodeURIComponent(`تنبيه: الطالب/ة ${s.name} تغيب عن حصة (${sessName}). يرجى المتابعة.`);
+                const waLink = `https://wa.me/${phoneClean}?text=${waMsg}`;
+
+                return `
+                <div class="glass-card p-4 flex justify-between items-center ${isPresent ? 'border-r-4 border-green-500 bg-green-500/10' : 'border-r-4 border-white/5'}">
+                    <div>
+                        <h4 class="text-xs font-bold">${s.name}</h4>
+                        <div class="flex gap-2 text-[9px] text-gray-500">
+                            <span>${s.phone || '---'}</span>
+                            <span class="text-indigo-400 bg-indigo-500/10 px-1 rounded">${s.grade || 'عام'}</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${!isPresent && s.phone ? `<a href="${waLink}" target="_blank" class="w-8 h-8 rounded-lg bg-green-600/20 text-green-400 flex items-center justify-center border border-green-500/30"><i class="fab fa-whatsapp"></i></a>` : ''}
+                        <button onclick="window.showQR('${s.id}', '${s.name}', '${s.phone}')" class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center"><i class="fas fa-qrcode"></i></button>
+                        <button onclick="window.markManual('${s.id}', '${s.name}')" class="w-8 h-8 rounded-lg ${isPresent ? 'bg-green-600 text-white' : 'bg-white/10 text-gray-400'} flex items-center justify-center"><i class="fas fa-check"></i></button>
+                    </div>
+                </div>
+            `}).join('');
+
+            updateChart(attendedIds.size);
+            
+            const sessList = document.getElementById('session-list');
+            if(sessList) {
+                sessList.innerHTML = state.sessions.map(s => `
+                    <div class="glass-card p-4 flex justify-between items-center group">
+                        <div><h4 class="text-xs font-bold">${s.title}</h4><p class="text-[9px] text-gray-500">${s.date}</p></div>
+                        <button onclick="window.delSess('${s.id}')" class="text-red-500/30 group-hover:text-red-500 p-2"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        window.markManual = async (sid, sname) => {
+            if(!state.activeSession) return toast("⚠️ اختر الحصة أولاً!");
+            if(state.attendance.find(a => a.studentId === sid && a.sessionId === state.activeSession)) return toast("محضر بالفعل");
+            await addDoc(collection(db, baseDir, "attendance"), { studentId: sid, studentName: sname, sessionId: state.activeSession, timestamp: serverTimestamp() });
+            toast(`✅ تم تحضير: ${sname}`);
+        };
+
+        window.delSess = async (id) => { 
+            if(confirm("حذف الحصة نهائياً من السحابة؟")) await deleteDoc(doc(db, baseDir, "sessions", id)); 
+        };
+
+        // تعديل زر إضافة الحصة لمنع التكرار
+        document.getElementById('add-sess-btn').onclick = async () => {
+            const t = document.getElementById('sess-name').value.trim();
+            if(!t) return;
+            
+            // التحقق من التكرار
+            const isDuplicate = state.sessions.some(s => s.title === t);
+            if(isDuplicate) {
+                toast("⚠️ اسم الحصة موجود بالفعل!", "error");
+                return;
+            }
+
+            await addDoc(collection(db, baseDir, "sessions"), { title: t, date: new Date().toLocaleDateString('ar-EG'), createdAt: serverTimestamp() });
+            document.getElementById('sess-name').value = '';
+            toast("تمت الإضافة سحابياً");
+        };
+
+        function updateChart(presentCount) {
+            const total = state.students.length;
+            const percent = total > 0 ? Math.round((presentCount/total)*100) : 0;
+            document.getElementById('chart-percent').innerText = percent + '%';
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: { datasets: [{ data: [presentCount, Math.max(0, total-presentCount)], backgroundColor: ['#6366f1', 'rgba(255,255,255,0.05)'], borderWidth: 0 }] },
+                options: { cutout: '82%', plugins: { legend: { display: false } } }
+            });
+        }
+
+        window.setFilter = (f) => {
+            state.filter = f;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-'+f).classList.add('active');
+            render();
+        };
+
+        window.setGradeFilter = (g) => {
+            state.gradeFilter = g;
+            document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('active'));
+            // تحديد الزر النشط بناء على النص في الـ onclick لأنه ليس له id فريد للتبسيط
+            const btns = document.querySelectorAll('.grade-btn');
+            btns.forEach(btn => {
+                if(btn.getAttribute('onclick').includes(`'${g}'`)) btn.classList.add('active');
+            });
+            render();
+        };
+
+        window.Scanner = {
+            active: false,
+            start: async function() {
+                if(!state.activeSession) return toast("⚠️ اختر الحصة أولاً!");
+                document.getElementById('scanner-view').classList.add('active');
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                    document.getElementById('video').srcObject = stream;
+                    this.active = true;
+                    requestAnimationFrame(() => this.tick());
+                } catch(e) { this.stop(); }
+            },
+            stop: function() {
+                this.active = false;
+                if(document.getElementById('video').srcObject) document.getElementById('video').srcObject.getTracks().forEach(t => t.stop());
+                document.getElementById('scanner-view').classList.remove('active');
+            },
+            tick: function() {
+                if(!this.active) return;
+                const v = document.getElementById('video');
+                if(v.readyState === v.HAVE_ENOUGH_DATA) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(v, 0, 0);
+                    const code = jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data, canvas.width, canvas.height);
+                    if(code) {
+                        try {
+                            const data = JSON.parse(decodeURIComponent(escape(atob(code.data))));
+                            if(data.id) {
+                                const std = state.students.find(s => s.id === data.id);
+                                if(std) {
+                                    window.markManual(data.id, std.name);
+                                    document.getElementById('scan-res').innerText = std.name;
+                                    setTimeout(() => { document.getElementById('scan-res').innerText = ""; this.stop(); }, 1200);
+                                }
+                            }
+                        } catch(e) {}
+                    }
+                }
+                requestAnimationFrame(() => this.tick());
+            }
+        };
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
