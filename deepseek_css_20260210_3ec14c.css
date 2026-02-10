@@ -1,0 +1,471 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Cairo', sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #1a2980, #26d0ce);
+    color: #333;
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 1200px;
+    padding: 30px;
+    animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* الهيدر */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo i {
+    font-size: 2.5rem;
+    color: #1a2980;
+    background: linear-gradient(45deg, #1a2980, #26d0ce);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.logo h1 {
+    font-size: 2rem;
+    color: #1a2980;
+    font-weight: 700;
+}
+
+.location-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(45deg, #1a2980, #26d0ce);
+    color: white;
+    padding: 12px 25px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    box-shadow: 0 5px 15px rgba(26, 41, 128, 0.3);
+}
+
+.location-info i {
+    font-size: 1.3rem;
+}
+
+.refresh-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.refresh-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(180deg);
+}
+
+/* الوقت الحالي */
+.current-time {
+    text-align: center;
+    background: linear-gradient(45deg, #1a2980, #26d0ce);
+    color: white;
+    padding: 25px;
+    border-radius: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 20px rgba(26, 41, 128, 0.2);
+}
+
+.time-now {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.time-now i {
+    font-size: 2.5rem;
+    opacity: 0.9;
+}
+
+#current-time {
+    font-size: 3.5rem;
+    font-weight: 700;
+    font-family: monospace;
+    letter-spacing: 3px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.hijri-date {
+    font-size: 1.3rem;
+    opacity: 0.9;
+}
+
+/* الصلاة القادمة */
+.next-prayer {
+    background: #fff;
+    border-radius: 20px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    border: 2px solid #e8f4ff;
+}
+
+.next-prayer h2 {
+    color: #1a2980;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.5rem;
+}
+
+.next-prayer-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.prayer-name {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #26d0ce;
+    background: linear-gradient(45deg, #1a2980, #26d0ce);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.countdown {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8f9ff;
+    padding: 15px 25px;
+    border-radius: 50px;
+    border: 2px solid #e1e8ff;
+}
+
+.countdown i {
+    color: #1a2980;
+    font-size: 1.5rem;
+}
+
+#countdown {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a2980;
+    font-family: monospace;
+}
+
+.prayer-time {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a2980;
+    background: #f8f9ff;
+    padding: 10px 25px;
+    border-radius: 15px;
+}
+
+/* جميع أوقات الصلاة */
+.all-prayers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.prayer-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.prayer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    border-color: #26d0ce;
+}
+
+.prayer-card.active {
+    background: linear-gradient(135deg, #1a2980, #26d0ce);
+    color: white;
+    border-color: #1a2980;
+}
+
+.prayer-card.active .prayer-time,
+.prayer-card.active .prayer-header h3,
+.prayer-card.active .prayer-header i {
+    color: white !important;
+}
+
+.prayer-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.prayer-header i {
+    font-size: 2rem;
+    color: #1a2980;
+}
+
+.prayer-header h3 {
+    font-size: 1.3rem;
+    color: #1a2980;
+}
+
+.prayer-card .prayer-time {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 10px 0;
+    color: #333;
+}
+
+.prayer-status {
+    height: 8px;
+    width: 100%;
+    background: #f0f0f0;
+    border-radius: 4px;
+    margin-top: 10px;
+    overflow: hidden;
+}
+
+.prayer-status::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(45deg, #1a2980, #26d0ce);
+    transition: width 0.5s ease;
+}
+
+/* الأزرار */
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.btn {
+    padding: 15px 35px;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 180px;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #1a2980, #26d0ce);
+    color: white;
+    box-shadow: 0 8px 20px rgba(26, 41, 128, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(26, 41, 128, 0.4);
+}
+
+.btn-secondary {
+    background: white;
+    color: #1a2980;
+    border: 2px solid #1a2980;
+}
+
+.btn-secondary:hover {
+    background: #f8f9ff;
+    transform: translateY(-3px);
+}
+
+/* الإعدادات */
+.settings {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #f8f9ff;
+    padding: 15px 25px;
+    border-radius: 15px;
+    border: 2px solid #e1e8ff;
+}
+
+.settings label {
+    color: #1a2980;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings select {
+    padding: 10px 15px;
+    border: 2px solid #e1e8ff;
+    border-radius: 10px;
+    background: white;
+    color: #333;
+    font-size: 1rem;
+    cursor: pointer;
+    min-width: 250px;
+}
+
+.settings select:focus {
+    outline: none;
+    border-color: #26d0ce;
+}
+
+/* الإشعار */
+.notification {
+    background: #e8f4ff;
+    border-right: 5px solid #1a2980;
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.notification i {
+    color: #1a2980;
+    font-size: 1.5rem;
+}
+
+.notification span {
+    color: #1a2980;
+    font-weight: 500;
+}
+
+/* الفوتر */
+footer {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 2px solid #e8f4ff;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+footer p {
+    margin: 5px 0;
+}
+
+.api-credit a {
+    color: #1a2980;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.api-credit a:hover {
+    text-decoration: underline;
+}
+
+/* تأثيرات للصلاة النشطة */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(38, 208, 206, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(38, 208, 206, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(38, 208, 206, 0); }
+}
+
+.prayer-card.current {
+    animation: pulse 2s infinite;
+}
+
+/* التجاوب مع الشاشات الصغيرة */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+    }
+    
+    header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .logo h1 {
+        font-size: 1.5rem;
+    }
+    
+    #current-time {
+        font-size: 2.5rem;
+    }
+    
+    .next-prayer-info {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .all-prayers {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .btn {
+        min-width: 140px;
+        padding: 12px 25px;
+    }
+    
+    .settings {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .settings select {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .all-prayers {
+        grid-template-columns: 1fr;
+    }
+    
+    .time-now {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

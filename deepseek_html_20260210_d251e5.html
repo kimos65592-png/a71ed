@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مواقيت الصلاة</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕌</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-mosque"></i>
+                <h1>مواقيت الصلاة</h1>
+            </div>
+            <div class="location-info">
+                <i class="fas fa-map-marker-alt"></i>
+                <span id="city">جاري تحديد الموقع...</span>
+                <button id="refresh-location" class="refresh-btn">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <div class="prayer-times-container">
+                <div class="current-time">
+                    <div class="time-now">
+                        <i class="fas fa-clock"></i>
+                        <span id="current-time">--:--:--</span>
+                    </div>
+                    <div class="hijri-date" id="hijri-date">--</div>
+                </div>
+
+                <div class="next-prayer">
+                    <h2><i class="fas fa-bell"></i> الصلاة القادمة</h2>
+                    <div class="next-prayer-info">
+                        <div class="prayer-name" id="next-prayer-name">--</div>
+                        <div class="countdown">
+                            <i class="fas fa-hourglass-half"></i>
+                            <span id="countdown">--:--:--</span>
+                        </div>
+                        <div class="prayer-time" id="next-prayer-time">--:--</div>
+                    </div>
+                </div>
+
+                <div class="all-prayers">
+                    <div class="prayer-card" data-prayer="fajr">
+                        <div class="prayer-header">
+                            <i class="fas fa-sun"></i>
+                            <h3>الفجر</h3>
+                        </div>
+                        <div class="prayer-time" id="fajr-time">--:--</div>
+                        <div class="prayer-status"></div>
+                    </div>
+
+                    <div class="prayer-card" data-prayer="sunrise">
+                        <div class="prayer-header">
+                            <i class="fas fa-sunrise"></i>
+                            <h3>الشروق</h3>
+                        </div>
+                        <div class="prayer-time" id="sunrise-time">--:--</div>
+                        <div class="prayer-status"></div>
+                    </div>
+
+                    <div class="prayer-card" data-prayer="dhuhr">
+                        <div class="prayer-header">
+                            <i class="fas fa-sun"></i>
+                            <h3>الظهر</h3>
+                        </div>
+                        <div class="prayer-time" id="dhuhr-time">--:--</div>
+                        <div class="prayer-status"></div>
+                    </div>
+
+                    <div class="prayer-card" data-prayer="asr">
+                        <div class="prayer-header">
+                            <i class="fas fa-sun"></i>
+                            <h3>العصر</h3>
+                        </div>
+                        <div class="prayer-time" id="asr-time">--:--</div>
+                        <div class="prayer-status"></div>
+                    </div>
+
+                    <div class="prayer-card" data-prayer="maghrib">
+                        <div class="prayer-header">
+                            <i class="fas fa-sunset"></i>
+                            <h3>المغرب</h3>
+                        </div>
+                        <div class="prayer-time" id="maghrib-time">--:--</div>
+                        <div class="prayer-status"></div>
+                    </div>
+
+                    <div class="prayer-card" data-prayer="isha">
+                        <div class="prayer-header">
+                            <i class="fas fa-moon"></i>
+                            <h3>العشاء</h3>
+                        </div>
+                        <div class="prayer-time" id="isha-time">--:--</div>
+                        <div class="prayer-status"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="play-adhan" class="btn btn-primary">
+                    <i class="fas fa-volume-up"></i> تشغيل الأذان
+                </button>
+                <button id="stop-adhan" class="btn btn-secondary">
+                    <i class="fas fa-volume-mute"></i> إيقاف الأذان
+                </button>
+                <div class="settings">
+                    <label for="calculation-method">
+                        <i class="fas fa-calculator"></i> طريقة الحساب:
+                    </label>
+                    <select id="calculation-method">
+                        <option value="3">الهيئة العامة المصرية للمساحة</option>
+                        <option value="1">جامعة العلوم الإسلامية</option>
+                        <option value="2">رابطة العالم الإسلامي</option>
+                        <option value="4">أم القرى</option>
+                        <option value="5">الإسلامي في أمريكا الشمالية</option>
+                        <option value="7">المعهد الجيوفيزيائي</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="notification">
+                <i class="fas fa-info-circle"></i>
+                <span>سيتم تشغيل الأذان تلقائياً عند وقت كل صلاة</span>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2023 مواقيت الصلاة | تم التطوير بحب ❤️</p>
+            <p class="api-credit">بيانات المواقيت من <a href="https://aladhan.com/" target="_blank">AlAdhan API</a></p>
+        </footer>
+    </div>
+
+    <!-- عنصر الصوت للأذان -->
+    <audio id="adhan-audio" preload="auto">
+        <source src="https://www.islamcan.com/audio/adhan/abdul-basit.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="script.js"></script>
+</body>
+</html>
